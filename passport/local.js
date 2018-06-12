@@ -15,6 +15,10 @@ const localStrategy = new LocalStrategy((username, password, done) => {
           location: 'username'
         });
       }
+      if(user){
+        //check if the number of characters in user is more than 1 if not reject a promise
+
+      }
       //const isValid = user.validatePassword(password);
       return user.validatePassword(password);
     })   
@@ -26,6 +30,8 @@ const localStrategy = new LocalStrategy((username, password, done) => {
           location: 'password'
         });
       }
+      //check if the password was a minimum length of 8 and maximum f 72 , if not reject the promise.
+      
       return done(null, user);
     })
     .catch(err => {

@@ -8,23 +8,63 @@ const User = require('../models/user');
 const router = express.Router();
 
 /***********POST ROUTER*********/
-router.post('/',(req,res,next) => {
-  const { fullname, username, password } = req.body; 
-  
-  if(!username){
-    const err = new Error('User Name cannot be empty');
-    err.status = 404;
+router.post('/',(req,res,next) => { 
+
+  const requiredFields = ['username', 'password'];
+  const missingField = requiredFields.find(field => !(field in req.body));
+
+  if (missingField) {
+    const err = new Error(`Missing '${missingField}' in request body`);
+    err.status = 422;
     return next(err);
   }
 
-  if(!password){
-    const err = new Error('Password cannot be empty');
-    err.status = 404;
+  const stringFields = ['username','password','fullname'];
+  const nonStringField = stringFields.find(field => {
+    return  field in req.body && typeof(req.body[field]) !== 'string';
+  });
+
+  if(nonStringField){
+    const err = new Error(`Non string field - ${nonStringField} should be of type string`);
+    err.status = 422;
+    return next(err);
+  }  
+
+  const trimmedFields = ['username', 'password'];
+  const whiteSpaceField = trimmedFields.find(field => {
+    return req.body[field] !== req.body[field].trim();
+  });
+
+  if(whiteSpaceField){
+    const err = new Error(`There are trailling white spaces in ${whiteSpaceField}`);
+    err.status =422;
+    return next(err);
+  } 
+  
+  //size of fields
+  const sizedFields = {username: {min:1},password: {min:8,max:72}};
+
+  const smallField = Object.keys(sizedFields).find(key => {
+    return req.body[key].lenght < sizedFields.key.min;
+  });
+
+  const largeField = Object.keys(sizedFields).find(key => {
+    return req.body[key].lenght > sizedFields.key.max;
+  });
+  
+  if(smallField){    
+    const err = new Error(`Check ${smallField} size -- too small`);
+    err.status =422;
     return next(err);
   }
 
-  //const newUser = {fullname,username,password};
-  
+  if(largeField){
+    const err = new Error('Check ${smallField} size -- too big');
+    err.status =422;
+    return next(err);
+  }
+
+  const {fullname,username,password} = req.body;
 
   return User.hashPassword(password)
     .then(digest => {
@@ -45,14 +85,6 @@ router.post('/',(req,res,next) => {
       }
       next(err);
     });
-  // User.create(newUser)
-  //   .then(result => {
-  //     res.location(`${req.originalUrl}/${result.username}`).status(201).json(result);
-  //     //res.json(result);
-  //   })
-  //   .catch(err => {
-  //     next(err);
-  //   });
 });
 
 
